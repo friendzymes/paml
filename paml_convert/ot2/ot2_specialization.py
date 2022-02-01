@@ -40,9 +40,9 @@ class OT2Specialization(BehaviorSpecialization):
         return {
             "https://bioprotocols.org/paml/primitives/sample_arrays/EmptyContainer" : self.define_container,
             "https://bioprotocols.org/paml/primitives/liquid_handling/Provision" : self.provision_container,
+            "https://bioprotocols.org/paml/primitives/liquid_handling/Transfer" : self.transfer_to,
             "https://bioprotocols.org/paml/primitives/sample_arrays/PlateCoordinates" : self.plate_coordinates,
-            "https://bioprotocols.org/paml/primitives/spectrophotometry/MeasureAbsorbance" : self.measure_absorbance,
-            "https://bioprotocols.org/paml/primitives/wait/WaitForTime" : self.time_wait
+            "https://bioprotocols.org/paml/primitives/spectrophotometry/MeasureAbsorbance" : self.measure_absorbance
         }
 
     def on_begin(self):
@@ -54,7 +54,6 @@ class OT2Specialization(BehaviorSpecialization):
         self.script += "metadata = {'apiLevel': '"+apilevel+"'\}\n\n"
         self.script += self._tipracks(json.loads(self.leftTipJson),json.loads(self.rightTipJson))
         self.script += self._materials(protocol)
-
 
     def on_end(self):
         self.script += self._steps()
@@ -134,9 +133,6 @@ class OT2Specialization(BehaviorSpecialization):
         #
         # self.var_to_entity[samples_var] = container
 
-        l.debug(f"define_container:")
-        l.debug(f" specification: {spec}")
-        l.debug(f" samples: {samples_var}")
         OT2Props = json.loads(spec.OT2SpecificProps)
         OT2Deck = OT2Props["deck"]
         
@@ -160,10 +156,6 @@ class OT2Specialization(BehaviorSpecialization):
         units = parameter_value_map["amount"]["value"].unit
         units = tyto.OM.get_term_by_uri(units)
         resource = parameter_value_map["resource"]["value"]
-        l.debug(f"provision_container:")
-        l.debug(f" destination: {destination}")
-        l.debug(f" amount: {value} {units}")
-        l.debug(f" resource: {resource}")
 
         OT2Props = json.loads(resource.OT2SpecificProps)
         OT2Source = OT2Props["source"]
@@ -177,18 +169,31 @@ class OT2Specialization(BehaviorSpecialization):
            OT2Coordinates="A1"
         destination_str = f"{destination.mask}"
         self.all_steps += [f"{OT2Pipette}.transfer({value},{OT2Source}['{OT2Coordinates}'],{destination_str})"]
-
+        
+    def transfer_to(self, record: paml.ActivityNodeExecution):
+        results = {}
+        call = record.call.lookup()
+        parameter_value_map = call.parameter_value_map()
+        destination = parameter_value_map["destination"]["value"]
+        source = parameter_value_map["source"]["value"]
+        value = parameter_value_map["amount"]["value"].value
+        units = parameter_value_map["amount"]["value"].unit
+        units = tyto.OM.get_term_by_uri(units)
+        OT2Pipette="left"
+        
+        try:
+         source_str = f"{source.mask}"
+         destination_str = f"{destination.mask}"
+         self.all_steps += [f"#{OT2Pipette}.transfer({value},{source_str},{destination_str})"]
+        except:
+         self.all_steps += [f"#{OT2Pipette}.transfer({value},{source},{destination})"]
+        
     def plate_coordinates(self, record: paml.ActivityNodeExecution):
         call = record.call.lookup()
         parameter_value_map = call.parameter_value_map()
         source = parameter_value_map["source"]["value"]
         coords = parameter_value_map["coordinates"]["value"]
-
-        l.debug(f"plate_coordinates:")
-        l.debug(f"  source: {source}")
-        l.debug(f"  coordinates: {coords}")
-
-
+        
     def measure_absorbance(self, record: paml.ActivityNodeExecution):
         call = record.call.lookup()
         parameter_value_map = call.parameter_value_map()
@@ -197,9 +202,6 @@ class OT2Specialization(BehaviorSpecialization):
         wl_units = tyto.OM.get_term_by_uri(wl.unit)
         samples = parameter_value_map["samples"]["value"]
 
-        l.debug(f"measure_absorbance:")
-        l.debug(f"  samples: {samples}")
-        l.debug(f"  wavelength: {wl.value} {wl_units}")
         samples_str = f"`{samples.source.lookup().value.lookup().value.name}({samples.mask})`"
         self.all_steps +=[f'protocol.comment(\'Make absorbance measurements (named `{measurements}`) of {samples_str} at {wl.value} {wl_units}.\')']
         
