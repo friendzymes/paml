@@ -8,6 +8,8 @@ import json
 import rdflib as rdfl
 from typing import Dict
 
+from objexplore import explore
+
 from paml.execution_engine import ExecutionEngine
 from paml_check.paml_check import check_doc
 from paml_convert.ot2.ot2_specialization import OT2Specialization
@@ -43,15 +45,7 @@ print('... Imported wait')
 protocol = paml.Protocol('iGEM_LUDOX_OD_calibration_2018')
 protocol.name = "iGEM 2018 LUDOX OD calibration protocol"
 protocol.description = '''
-With this protocol you will use LUDOX CL-X (a 45% colloidal silica suspension) as a single point reference to
-obtain a conversion factor to transform absorbance (OD600) data from your plate reader into a comparable
-OD600 measurement as would be obtained in a spectrophotometer. This conversion is necessary because plate
-reader measurements of absorbance are volume dependent; the depth of the fluid in the well defines the path
-length of the light passing through the sample, which can vary slightly from well to well. In a standard
-spectrophotometer, the path length is fixed and is defined by the width of the cuvette, which is constant.
-Therefore this conversion calculation can transform OD600 measurements from a plate reader (i.e. absorbance
-at 600 nm, the basic output of most instruments) into comparable OD600 measurements. The LUDOX solution
-is only weakly scattering and so will give a low absorbance value.
+Test Execution
 '''
 doc.add(protocol)
 
@@ -96,12 +90,13 @@ plate2 = protocol.primitive_step('EmptyContainer', specification=platespec2) # d
 # identify wells to use
 c_ddh2o = protocol.primitive_step('PlateCoordinates', source=plate1.output_pin('samples'), coordinates="plate1['A1:D1']")
 # put water in selected wells
-provision_ddh2o = protocol.primitive_step('Provision', resource=ddh2o, destination=c_ddh2o.output_pin('samples'),amount=sbol3.Measure(80, tyto.OM.microliter))
+provision_ddh2o = protocol.primitive_step('Provision', resource=ddh2o, destination=c_ddh2o.output_pin('samples'),amount=sbol3.Measure(100, tyto.OM.microliter))
 #identify wells to use
 c_ludox = protocol.primitive_step('PlateCoordinates', source=plate1.output_pin('samples'), coordinates="plate1['A2:D2']")
 # put ludox in selected wells
-provision_ludox = protocol.primitive_step('Provision', resource=ludox, destination=c_ludox.output_pin('samples'),amount=sbol3.Measure(90, tyto.OM.microliter))
-protocol.primitive_step('WaitForTime', amount=sbol3.Measure(25, tyto.OM.second)) #Experimental: Errors out if you stick it in some places
+provision_ludox = protocol.primitive_step('Provision', resource=ludox, destination=c_ludox.output_pin('samples'),amount=sbol3.Measure(100, tyto.OM.microliter))
+
+
 # identify wells to use
 c_ddh2o2 = protocol.primitive_step('PlateCoordinates', source=plate2.output_pin('samples'), coordinates="plate2['A1:D1']")
 # put water in selected wells
@@ -109,15 +104,14 @@ provision_ddh2o2 = protocol.primitive_step('Provision', resource=ddh2o, destinat
 #identify wells to use
 c_ludox2 = protocol.primitive_step('PlateCoordinates', source=plate2.output_pin('samples'), coordinates="plate2['A2:D2']")
 # put ludox in selected wells
-provision_ludox2 = protocol.primitive_step('Provision', resource=ludox, destination=c_ludox2.output_pin('samples'),amount=sbol3.Measure(110, tyto.OM.microliter))
+provision_ludox2 = protocol.primitive_step('Provision', resource=ludox, destination=c_ludox2.output_pin('samples'),amount=sbol3.Measure(100, tyto.OM.microliter))
 
-
-
-
+transfer_org= protocol.primitive_step('PlateCoordinates', source=plate1.output_pin('samples'), coordinates="plate1['A2']")
+transfer_dest= protocol.primitive_step('PlateCoordinates', source=plate2.output_pin('samples'), coordinates="plate2['A2']")
+transfer = protocol.primitive_step('Transfer', source=transfer_org.output_pin('samples'), destination=transfer_dest.output_pin('samples'),amount=sbol3.Measure(10, tyto.OM.microliter))
 
 leftTiprackSettingJSON = '{"pipette":"p1000_single_gen2","tipracks":[{"id":"geb_96_tiprack_1000ul","deck":4},{"id":"geb_96_tiprack_1000ul","deck":5}]}'
 rightTiprackSettingJSON = '{"pipette":"p20_single_gen2","tipracks":[{"id":"opentrons_96_tiprack_20ul","deck":6},{"id":"opentrons_96_tiprack_20ul","deck":7}]}'
-
 
 filename="ludox_ot2.py"
 agent = sbol3.Agent("test_agent")
@@ -127,5 +121,15 @@ execution = ee.execute(protocol, agent, id="test_execution")
 with open(filename, 'w') as f:
      print(ee.specializations[0].script,file=f)
 print(f"All done. Script dumped to {filename}.")
-     
 
+#v = doc.validate()
+#assert len(v) == 0, "".join(f'\n {e}' for e in v)
+
+#temp_name = os.path.join(tempfile.gettempdir(), 'ludox.nt')
+#doc.write(temp_name, sbol3.SORTED_NTRIPLES)
+#print(f'Wrote file as {temp_name}')
+
+ #render and view the dot
+#dot = protocol.to_dot()
+#dot.render(f'{protocol.name}.gv')
+#dot.view()
