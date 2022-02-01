@@ -34,8 +34,6 @@ paml.import_library('spectrophotometry')
 print('... Imported spectrophotometry')
 paml.import_library('sample_arrays')
 print('... Imported sample arrays')
-paml.import_library('wait')
-print('... Imported wait')
 
 
 # Example of how to generate a template for a new protocol step
