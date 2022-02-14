@@ -17,4 +17,14 @@ Friendzymes is producing the first practical demonstration of a new lab automati
 - The repository where work will be deposited
   - https://github.com/friendzymes/paml 
 
+### TODO
+|Task|Progress|
+|---|---|
+|Multi-execution enviroment implementation|Debugging|
+|Golden Gate Implementation - Implement sample collection library|30%|
+|Golden Gate Implementation - Implement Seal and Spin Markdown|-|
+|Golden Gate Implementation - Implement Incubate Markdown|-|
+|Golden Gate Implementation - Implement Incubate Ot2 Module|-|
+|OT2 Specialization - !!!Refactor!!!|-|
+|OT2 Specialization - Add Github upload|-|
 ---
